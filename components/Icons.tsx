@@ -1,3 +1,5 @@
+// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
+/// <reference types="react" />
 
 import React from 'react';
 
@@ -15,8 +17,10 @@ export const LaptopIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 export const PiggyBankIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l-2.25-1.313M12 12.75l-2.25 1.313M12 12.75V15m0-2.25l2.25 1.313M12 12.75l2.25-1.313M21 12.75v2.25m0-2.25l-2.25 1.313M3 12.75l2.25-1.313M3 12.75l2.25 1.313M3 12.75v2.25m9 3l-2.25-1.313M12 18.25l-2.25 1.313M12 18.25V21m0-2.75l2.25 1.313M12 18.25l2.25-1.313M21 18.25v2.25m0-2.25l-2.25 1.313M3 18.25l2.25-1.313M3 18.25l2.25 1.313M3 18.25v2.25" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 110-18 9 9 0 010 18z" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18Z" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 13.5a2.25 2.25 0 1 1 3 0m-3 0V15m3-1.5V15m-3-4.5a2.25 2.25 0 1 0 3 0m-3 0V12m3-1.5V12" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5c-.777.23-1.5.553-2.162.962" />
+     <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 7.5c.777.23 1.5.553 2.162.962" />
   </svg>
 );
 
@@ -54,4 +58,81 @@ export const SparklesIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => 
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
     </svg>
+);
+
+
+// Banknote Icons
+const NoteBase: React.FC<React.SVGProps<SVGSVGElement> & { children: React.ReactNode, gradientId: string }> = ({ children, gradientId, ...props }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50" {...props}>
+        <rect width="100" height="50" rx="4" fill={`url(#${gradientId})`} />
+        {children}
+        <rect x="2" y="2" width="96" height="46" rx="2" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+    </svg>
+);
+
+const noteTextStyle = { fontFamily: "'Nunito', sans-serif", fill: "white", fontWeight: "900", textShadow: "1px 1px 2px rgba(0,0,0,0.3)" };
+
+export const RM50NoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <NoteBase gradientId="grad50" {...props}>
+        <defs>
+            <linearGradient id="grad50" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#2dd4bf' }} />
+                <stop offset="100%" style={{ stopColor: '#38bdf8' }} />
+            </linearGradient>
+        </defs>
+        <text x="8" y="16" fontSize="12" style={noteTextStyle}>50</text>
+        <text x="92" y="42" fontSize="10" textAnchor="end" style={noteTextStyle}>RM</text>
+    </NoteBase>
+);
+
+export const RM20NoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <NoteBase gradientId="grad20" {...props}>
+        <defs>
+            <linearGradient id="grad20" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#fb923c' }} />
+                <stop offset="100%" style={{ stopColor: '#facc15' }} />
+            </linearGradient>
+        </defs>
+        <text x="8" y="16" fontSize="12" style={noteTextStyle}>20</text>
+        <text x="92" y="42" fontSize="10" textAnchor="end" style={noteTextStyle}>RM</text>
+    </NoteBase>
+);
+
+export const RM10NoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <NoteBase gradientId="grad10" {...props}>
+        <defs>
+            <linearGradient id="grad10" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#f43f5e' }} />
+                <stop offset="100%" style={{ stopColor: '#fb7185' }} />
+            </linearGradient>
+        </defs>
+        <text x="8" y="16" fontSize="12" style={noteTextStyle}>10</text>
+        <text x="92" y="42" fontSize="10" textAnchor="end" style={noteTextStyle}>RM</text>
+    </NoteBase>
+);
+
+export const RM5NoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <NoteBase gradientId="grad5" {...props}>
+        <defs>
+            <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#4ade80' }} />
+                <stop offset="100%" style={{ stopColor: '#86efac' }} />
+            </linearGradient>
+        </defs>
+        <text x="8" y="16" fontSize="12" style={noteTextStyle}>5</text>
+        <text x="92" y="42" fontSize="10" textAnchor="end" style={noteTextStyle}>RM</text>
+    </NoteBase>
+);
+
+export const RM1NoteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <NoteBase gradientId="grad1" {...props}>
+        <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#60a5fa' }} />
+                <stop offset="100%" style={{ stopColor: '#93c5fd' }} />
+            </linearGradient>
+        </defs>
+        <text x="8" y="16" fontSize="12" style={noteTextStyle}>1</text>
+        <text x="92" y="42" fontSize="10" textAnchor="end" style={noteTextStyle}>RM</text>
+    </NoteBase>
 );

@@ -1,3 +1,5 @@
+// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
+/// <reference types="react" />
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
