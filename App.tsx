@@ -1,120 +1,316 @@
-// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
-/// <reference types="react" />
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { Wallet } from './components/Wallet';
-import { ActionButton } from './components/ActionButton';
-import { DailySummary } from './components/DailySummary';
-import { MotivationalMessage } from './components/MotivationalMessage';
 import { Confetti } from './components/Confetti';
-import { CoinIcon, MinusCircleIcon, PlusCircleIcon, SaveIcon } from './components/Icons';
+import { TransactionHistory } from './components/TransactionHistory';
+import { SettingsIcon, ResetIcon, PlusCircleIcon, HistoryIcon } from './components/Icons';
+import { SettingsModal } from './components/SettingsModal';
+import { SummaryCard } from './components/SummaryCard';
+import { TransactionForm } from './components/TransactionForm';
+import { Visualization } from './components/Visualization';
+import { CollapsibleCard } from './components/CollapsibleCard';
+import { Wallet } from './components/Wallet';
+import { DailySummary } from './components/DailySummary';
+import { EditValueModal } from './components/EditValueModal';
 
-// Constants
-const DAILY_ALLOWANCE = 30;
-const RM_TO_MINUTES = 5;
+
+// Interfaces
+export interface Transaction {
+  id: string;
+  date: string;
+  teacher: string;
+  type: 'add' | 'deduct' | 'save';
+  minutes: number;
+  reason: string;
+  conversionRate: number; // Store the rate at the time of transaction
+}
+
+export interface Settings {
+  conversionRate: number;
+  dailyResetMinutes: number;
+  dailyResetEnabled: boolean;
+  animationsEnabled: boolean;
+  teachers: string[];
+  timeOptions: number[];
+  reasonOptions: string[];
+  pin: string;
+  studentName: string;
+}
+
+interface AppState {
+  balanceMinutes: number;
+  savedMinutes: number;
+  transactions: Transaction[];
+  lastResetDate: string;
+}
+
+// Initial States
+const initialSettings: Settings = {
+  conversionRate: 0.50, // RM0.50 per minute
+  dailyResetMinutes: 60,
+  dailyResetEnabled: false,
+  animationsEnabled: true,
+  teachers: ['Germaine Tay', 'Barbara Lim', 'Fazliza Zulkifli', 'Hazima'],
+  timeOptions: [5, 10, 15, 20, 30, 45, 60],
+  reasonOptions: ['Focus reward', 'Completed task', 'Emotional regulation', 'Break time'],
+  pin: '', // No PIN by default
+  studentName: 'Mohamed',
+};
+
+const initialAppState: AppState = {
+  balanceMinutes: 60,
+  savedMinutes: 0,
+  transactions: [],
+  lastResetDate: new Date().toISOString().split('T')[0],
+};
 
 const App: React.FC = () => {
-  const [balance, setBalance] = useLocalStorage<number>('walletBalance', DAILY_ALLOWANCE);
-  const [saved, setSaved] = useLocalStorage<number>('walletSaved', 0);
-  const [spentToday, setSpentToday] = useLocalStorage<number>('walletSpentToday', 0);
-  const [savedToday, setSavedToday] = useLocalStorage<number>('walletSavedToday', 0);
-  const [lastLoginDate, setLastLoginDate] = useLocalStorage<string>('walletLastLogin', '');
+  const [appState, setAppState] = useLocalStorage<AppState>('laptopWalletState_v3', initialAppState);
+  const [settings, setSettings] = useLocalStorage<Settings>('laptopWalletSettings_v3', initialSettings);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState<'add' | 'deduct' | 'save' | null>(null);
+  const [isFormVisible, setIsFormVisible] = useState(true);
+  const [isHistoryVisible, setIsHistoryVisible] = useState(true);
+  const [editingTarget, setEditingTarget] = useState<'balance' | 'saved' | null>(null);
 
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [showEarnConfetti, setShowEarnConfetti] = useState(false);
 
-  const handleDailyAllowance = useCallback(() => {
+  const handleDailyReset = useCallback(() => {
     const today = new Date().toISOString().split('T')[0];
-    if (today !== lastLoginDate) {
-      setBalance(prevBalance => prevBalance + DAILY_ALLOWANCE);
-      setSpentToday(0);
-      setSavedToday(0);
-      setLastLoginDate(today);
-      setShowEarnConfetti(true);
+    if (settings.dailyResetEnabled && today !== appState.lastResetDate) {
+      setAppState(prevState => ({
+        ...prevState,
+        balanceMinutes: settings.dailyResetMinutes,
+        lastResetDate: today,
+      }));
     }
-  }, [lastLoginDate, setBalance, setLastLoginDate, setSavedToday, setSpentToday]);
-
+  }, [appState.lastResetDate, setAppState, settings.dailyResetEnabled, settings.dailyResetMinutes]);
+  
   useEffect(() => {
-    handleDailyAllowance();
+    handleDailyReset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
-  const handleAction = (type: 'spend' | 'save' | 'earn', amount: number) => {
-    if ((type === 'spend' || type === 'save') && balance < amount) {
-      alert("Oops! Not enough RM in your wallet.");
+  const handleTransaction = (minutes: number, reason: string, teacher: string, type: 'add' | 'deduct' | 'save') => {
+    if ((type === 'deduct' || type === 'save') && appState.balanceMinutes < minutes) {
+      alert("Oops! Not enough minutes available for this transaction.");
       return;
     }
 
-    switch (type) {
-      case 'spend':
-        setBalance(balance - amount);
-        setSpentToday(spentToday + amount);
-        break;
-      case 'save':
-        setBalance(balance - amount);
-        setSaved(saved + amount);
-        setSavedToday(savedToday + amount);
-        setShowConfetti(true);
-        break;
-      case 'earn':
-        setBalance(balance + amount);
-        setShowEarnConfetti(true);
-        break;
+    const newTransaction: Transaction = {
+      id: new Date().toISOString() + Math.random(),
+      date: new Date().toISOString(),
+      teacher,
+      type,
+      minutes,
+      reason,
+      conversionRate: settings.conversionRate,
+    };
+
+    setAppState(prevState => {
+      let newBalance = prevState.balanceMinutes;
+      let newSaved = prevState.savedMinutes;
+
+      if (type === 'add') {
+        newBalance += minutes;
+      } else if (type === 'deduct') {
+        newBalance -= minutes;
+      } else if (type === 'save') {
+        newBalance -= minutes;
+        newSaved += minutes;
+      }
+      
+      return {
+        ...prevState,
+        balanceMinutes: newBalance,
+        savedMinutes: newSaved,
+        transactions: [newTransaction, ...prevState.transactions],
+      };
+    });
+    
+    if (settings.animationsEnabled && (type === 'add' || type === 'save')) {
+      setShowConfetti(type);
+    }
+  };
+  
+  const handleManualReset = () => {
+    if (window.confirm(`Are you sure you want to reset the day's time to ${settings.dailyResetMinutes} minutes? This will not affect saved time.`)) {
+       setAppState(prevState => ({
+        ...prevState,
+        balanceMinutes: settings.dailyResetMinutes,
+        lastResetDate: new Date().toISOString().split('T')[0],
+      }));
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-100 via-blue-100 to-pink-100 text-gray-800 flex flex-col items-center justify-center p-4">
-      <Confetti trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
-      <Confetti trigger={showEarnConfetti} onComplete={() => setShowEarnConfetti(false)} colors={['#FBBF24', '#F59E0B', '#D97706']} />
+  const handleSaveSettings = (newSettings: Settings) => {
+    setSettings(newSettings);
+    setIsSettingsOpen(false);
+  };
+  
+  const openSettings = () => {
+    if (settings.pin) {
+      const enteredPin = prompt('Please enter your 4-digit PIN to access settings:');
+      if (enteredPin === settings.pin) {
+        setIsSettingsOpen(true);
+      } else if (enteredPin !== null) {
+        alert('Incorrect PIN.');
+      }
+    } else {
+      setIsSettingsOpen(true);
+    }
+  };
+
+  const openEditModal = (target: 'balance' | 'saved') => {
+    setEditingTarget(target);
+  };
+
+  const closeEditModal = () => {
+      setEditingTarget(null);
+  };
+
+  const handleValueUpdate = (newMinutes: number, enteredPin: string) => {
+      if (settings.pin && settings.pin !== enteredPin) {
+          alert('Incorrect PIN.');
+          return;
+      }
+
+      if (editingTarget === null) return;
+
+      const currentValue = editingTarget === 'balance' ? appState.balanceMinutes : appState.savedMinutes;
+      const difference = newMinutes - currentValue;
+
+      if (difference === 0) {
+          closeEditModal();
+          return;
+      }
+
+      const transactionType = difference > 0 ? 'add' : 'deduct';
       
-      <header className="text-center mb-6 md:mb-8">
-        <h1 className="text-4xl md:text-6xl font-black text-teal-600 drop-shadow-md">Laptop Wallet</h1>
-        <p className="text-lg md:text-xl text-blue-500 mt-2">Your key to balanced screen time!</p>
+      const newTransaction: Transaction = {
+        id: new Date().toISOString() + Math.random(),
+        date: new Date().toISOString(),
+        teacher: 'Admin',
+        type: transactionType,
+        minutes: Math.abs(difference),
+        reason: `Manual ${editingTarget} Adjustment`,
+        conversionRate: settings.conversionRate,
+      };
+
+      setAppState(prevState => {
+          const newTransactions = [newTransaction, ...prevState.transactions];
+          if (editingTarget === 'balance') {
+              return {
+                  ...prevState,
+                  balanceMinutes: newMinutes,
+                  transactions: newTransactions,
+              };
+          } else { 
+              return {
+                  ...prevState,
+                  savedMinutes: newMinutes,
+                  transactions: newTransactions,
+              };
+          }
+      });
+      
+      closeEditModal();
+  };
+
+
+  return (
+    <div className="min-h-screen text-gray-800 flex flex-col items-center p-4 selection:bg-purple-200">
+      {settings.animationsEnabled && <>
+          <Confetti trigger={showConfetti === 'add' || showConfetti === 'save'} onComplete={() => setShowConfetti(null)} colors={['#A7F3D0', '#BAE6FD', '#FBCFE8']} />
+      </>}
+      
+      <header className="text-center mb-6 md:mb-8 w-full max-w-6xl">
+        <div className="relative inline-block">
+            <h1 className="text-4xl md:text-6xl font-black text-gray-700 drop-shadow-md">Laptop Time Wallet</h1>
+            <p className="text-lg md:text-xl text-gray-500 mt-2">Dashboard for {settings.studentName}</p>
+            <button onClick={openSettings} className="absolute -right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-500 transition-colors" aria-label="Open Settings">
+                <SettingsIcon className="w-8 h-8"/>
+            </button>
+        </div>
       </header>
       
-      <main className="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg p-6 md:p-8 order-2 lg:order-1">
-          <h2 className="text-2xl font-bold text-teal-700 mb-6 flex items-center gap-3">
-            <CoinIcon className="w-8 h-8 text-yellow-500" />
-            Take Action
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-pink-100 p-4 rounded-xl">
-                <h3 className="font-bold text-pink-800 mb-2 text-lg">Spend Time</h3>
-                <div className="flex flex-wrap gap-2">
-                    <ActionButton onClick={() => handleAction('spend', 1)} label="Spend RM1" color="pink" icon={<MinusCircleIcon />} />
-                    <ActionButton onClick={() => handleAction('spend', 5)} label="Spend RM5" color="pink" icon={<MinusCircleIcon />} />
-                </div>
+      <main className="w-full max-w-6xl mx-auto flex flex-col gap-6 md:gap-8">
+        <SummaryCard 
+            balanceMinutes={appState.balanceMinutes}
+            savedMinutes={appState.savedMinutes}
+            dailyAllowance={settings.dailyResetEnabled ? settings.dailyResetMinutes : undefined}
+            conversionRate={settings.conversionRate}
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
+            <div className="lg:col-span-2">
+                 <Wallet 
+                    balance={appState.balanceMinutes * settings.conversionRate}
+                    saved={appState.savedMinutes * settings.conversionRate}
+                    conversionRate={settings.conversionRate}
+                    onEditRequest={openEditModal}
+                />
             </div>
-            <div className="bg-blue-100 p-4 rounded-xl">
-                <h3 className="font-bold text-blue-800 mb-2 text-lg">Save for Later</h3>
-                <div className="flex flex-wrap gap-2">
-                    <ActionButton onClick={() => handleAction('save', 1)} label="Save RM1" color="blue" icon={<SaveIcon />} />
-                    <ActionButton onClick={() => handleAction('save', 5)} label="Save RM5" color="blue" icon={<SaveIcon />} />
-                </div>
+            <div className="lg:col-span-3">
+                <DailySummary 
+                    transactions={appState.transactions}
+                    dailyAllowance={settings.dailyResetMinutes}
+                />
             </div>
-            <div className="bg-teal-100 p-4 rounded-xl md:col-span-2">
-                 <h3 className="font-bold text-teal-800 mb-2 text-lg">Earn More Time</h3>
-                 <div className="flex flex-wrap gap-2">
-                    <ActionButton onClick={() => handleAction('earn', 5)} label="Earn RM5" color="teal" icon={<PlusCircleIcon />} />
-                    <ActionButton onClick={() => handleAction('earn', 10)} label="Earn RM10" color="teal" icon={<PlusCircleIcon />} />
-                 </div>
-            </div>
-          </div>
         </div>
-        
-        <div className="flex flex-col gap-6 md:gap-8 order-1 lg:order-2">
-            <Wallet balance={balance} saved={saved} timeRate={RM_TO_MINUTES} />
-            <DailySummary spent={spentToday} saved={savedToday} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
+            <CollapsibleCard
+              className="lg:col-span-2"
+              title="Log New Entry"
+              icon={<PlusCircleIcon className="w-8 h-8 text-purple-500"/>}
+              isOpen={isFormVisible}
+              onToggle={() => setIsFormVisible(v => !v)}
+            >
+              <TransactionForm settings={settings} onTransaction={handleTransaction} balanceMinutes={appState.balanceMinutes} />
+            </CollapsibleCard>
+
+            <CollapsibleCard
+              className="lg:col-span-3"
+              title="History & Activity"
+              icon={<HistoryIcon className="w-8 h-8 text-purple-500"/>}
+              isOpen={isHistoryVisible}
+              onToggle={() => setIsHistoryVisible(v => !v)}
+              headerActions={
+                <button onClick={(e) => { e.stopPropagation(); handleManualReset(); }} className="flex items-center gap-2 px-4 py-2 rounded-full font-bold shadow-md transform transition-all duration-200 hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-4 bg-gray-200 hover:bg-gray-300 text-gray-600 ring-gray-300" title="Reset day's time">
+                    <ResetIcon className="w-5 h-5"/>
+                    <span className="hidden sm:inline">Reset Day</span>
+                </button>
+              }
+            >
+              <div className="flex flex-col">
+                  <Visualization transactions={appState.transactions} />
+                  <TransactionHistory transactions={appState.transactions} />
+              </div>
+            </CollapsibleCard>
         </div>
       </main>
 
-      <footer className="mt-8">
-        <MotivationalMessage />
-      </footer>
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onSave={handleSaveSettings}
+        currentSettings={settings}
+        transactions={appState.transactions}
+        resetAllData={() => {
+            if (window.confirm('DANGER ZONE: This will delete all transactions and reset the wallet. Are you absolutely sure?')) {
+                setAppState(initialAppState);
+            }
+        }}
+      />
+      <EditValueModal
+        isOpen={editingTarget !== null}
+        onClose={closeEditModal}
+        onSave={handleValueUpdate}
+        target={editingTarget}
+        currentMinutes={
+            editingTarget === 'balance' ? appState.balanceMinutes :
+            editingTarget === 'saved' ? appState.savedMinutes : 0
+        }
+        hasPin={!!settings.pin}
+      />
     </div>
   );
 };

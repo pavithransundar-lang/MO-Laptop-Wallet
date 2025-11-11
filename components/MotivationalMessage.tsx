@@ -1,6 +1,4 @@
-// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
-/// <reference types="react" />
-
+// FIX: Removed triple-slash directive for React types. It can conflict with modern TypeScript/React project configurations and cause type resolution errors.
 import React, { useState, useEffect } from 'react';
 import { SparklesIcon } from './Icons';
 

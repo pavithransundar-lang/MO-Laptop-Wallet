@@ -1,5 +1,5 @@
 {
-  "name": "Laptop Wallet",
-  "description": "An educational app that teaches children budgeting and screen-time control using Malaysian Ringgit (RM) as a metaphor for laptop time.",
+  "name": "Laptop Time Wallet: Teacher Dashboard",
+  "description": "A calm, visual dashboard for teachers to manage student laptop time as a digital wallet. Tracks minutes, converts to MYR, and encourages responsible usage.",
   "requestFramePermissions": []
 }

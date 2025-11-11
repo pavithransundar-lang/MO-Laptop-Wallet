@@ -1,6 +1,4 @@
-// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
-/// <reference types="react" />
-
+// FIX: Removed triple-slash directive for React types. It can conflict with modern TypeScript/React project configurations and cause type resolution errors.
 import React, { useEffect, useState, useMemo } from 'react';
 
 interface ConfettiProps {
@@ -10,7 +8,7 @@ interface ConfettiProps {
   colors?: string[];
 }
 
-const defaultColors = ['#67E8F9', '#F472B6', '#A78BFA', '#FBBF24']; // teal, pink, purple, gold
+const defaultColors = ['#A7F3D0', '#BAE6FD', '#FEF08A', '#E9D5FF']; // mint, sky blue, soft yellow, lavender
 
 export const Confetti: React.FC<ConfettiProps> = ({ trigger, onComplete, count = 50, colors = defaultColors }) => {
   const [isAnimating, setIsAnimating] = useState(false);

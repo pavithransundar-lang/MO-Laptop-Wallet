@@ -1,26 +1,78 @@
-// Fix: Explicitly include React's type definitions to solve issues with unrecognized JSX intrinsic elements.
-/// <reference types="react" />
-
-import React from 'react';
-import { ChartBarIcon } from './Icons';
+import React, { useMemo } from 'react';
+import { ChartBarIcon, SparklesIcon, PlusCircleIcon, MinusCircleIcon, PiggyBankIcon } from './Icons';
+import type { Transaction } from '../App';
 
 interface DailySummaryProps {
-  spent: number;
-  saved: number;
+  transactions: Transaction[];
+  dailyAllowance: number;
 }
 
-const formatCurrency = (amount: number) => `RM${amount.toFixed(2)}`;
+const formatMinutes = (minutes: number) => `${Math.abs(minutes)} min`;
 
-export const DailySummary: React.FC<DailySummaryProps> = ({ spent, saved }) => {
+const staticMessages = [
+  "Great job managing your time today!",
+  "Every minute saved is a step towards your goal!",
+  "Smart choices lead to more fun time!",
+  "You're a time management superstar!",
+  "Well done on your choices today!",
+  "Keep up the amazing work!",
+];
+
+export const DailySummary: React.FC<DailySummaryProps> = ({ transactions }) => {
+  const motivationalMessage = useMemo(() => {
+    return staticMessages[Math.floor(Math.random() * staticMessages.length)];
+  }, [transactions]);
+
+
+  const summary = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todaysTransactions = transactions.filter(tx => tx.date.startsWith(today));
+
+    const addedToday = todaysTransactions
+      .filter(tx => tx.type === 'add')
+      .reduce((sum, tx) => sum + tx.minutes, 0);
+
+    const deductedToday = todaysTransactions
+      .filter(tx => tx.type === 'deduct')
+      .reduce((sum, tx) => sum + tx.minutes, 0);
+
+    const savedToday = todaysTransactions
+      .filter(tx => tx.type === 'save')
+      .reduce((sum, tx) => sum + tx.minutes, 0);
+
+    return { addedToday, deductedToday, savedToday };
+  }, [transactions]);
+
   return (
-    <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg p-6 w-full">
-      <h3 className="text-xl font-bold text-gray-700 mb-3 flex items-center gap-2">
-        <ChartBarIcon className="w-6 h-6 text-blue-500"/>
-        Today's Summary
-      </h3>
-      <div className="space-y-2 text-gray-600">
-        <p>You have spent <span className="font-bold text-pink-600">{formatCurrency(spent)}</span> today.</p>
-        <p>You saved <span className="font-bold text-blue-600">{formatCurrency(saved)}</span> for another day!</p>
+    <div className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg p-6 w-full h-full flex flex-col justify-between">
+      <div>
+        <h3 className="text-xl font-bold text-gray-700 mb-4 flex items-center gap-2">
+            <ChartBarIcon className="w-6 h-6 text-blue-500"/>
+            Daily Reflection
+        </h3>
+        <div className="space-y-3 text-gray-600 text-lg">
+            <div className="flex items-center gap-3">
+                <PlusCircleIcon className="w-6 h-6 text-green-500 shrink-0"/>
+                <span>Time Added Today:</span>
+                <span className="font-bold text-green-600">{formatMinutes(summary.addedToday)}</span>
+            </div>
+             <div className="flex items-center gap-3">
+                <MinusCircleIcon className="w-6 h-6 text-red-500 shrink-0"/>
+                <span>Time Used Today:</span>
+                <span className="font-bold text-red-600">{formatMinutes(summary.deductedToday)}</span>
+            </div>
+             <div className="flex items-center gap-3">
+                <PiggyBankIcon className="w-6 h-6 text-yellow-600 shrink-0"/>
+                <span>Time Saved Today:</span>
+                <span className="font-bold text-yellow-600">{formatMinutes(summary.savedToday)}</span>
+            </div>
+        </div>
+      </div>
+      <div className="bg-yellow-100 border-2 border-yellow-300 text-yellow-800 rounded-xl px-4 py-3 shadow-inner flex items-center gap-3 mt-4 min-h-[64px]">
+        <SparklesIcon className="w-6 h-6 text-yellow-500 shrink-0" />
+        <p className="font-bold text-sm text-center w-full">
+          {motivationalMessage}
+        </p>
       </div>
     </div>
   );
